@@ -3,6 +3,7 @@ package org.surest.security;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -13,23 +14,31 @@ import java.util.List;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "my_super_secret_key_which_should_be_long_and_secure";
-    private static final long EXPIRATION_MS = 1000 * 60 * 60 * 10;
-    private final Algorithm algorithm = Algorithm.HMAC256(SECRET_KEY);
+    private final JwtProperties jwtProperties;
+    private Algorithm algorithm;
+
+    public JwtUtil(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+    }
+
+    @PostConstruct
+    void init() {
+        this.algorithm = Algorithm.HMAC256(jwtProperties.getSecret());
+    }
 
     public String generateToken(String username, List<String> roles) {
         return JWT.create()
                 .withSubject(username)
                 .withArrayClaim("roles", roles.toArray(new String[0]))
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_MS))
-                .withIssuer("example.com")
+                .withExpiresAt(new Date(System.currentTimeMillis() + jwtProperties.getExpirationMs()))
+                .withIssuer(jwtProperties.getIssuer())
                 .sign(algorithm);
     }
 
     public DecodedJWT decodeToken(String token) {
         return JWT.require(algorithm)
-                .withIssuer("example.com")
+                .withIssuer(jwtProperties.getIssuer())
                 .build()
                 .verify(token);
     }
@@ -39,22 +48,23 @@ public class JwtUtil {
     }
 
     public List<String> extractRoles(String token) {
-        String[] arr = decodeToken(token).getClaim("roles").asArray(String.class);
-        if (arr != null && arr.length > 0) {
-            return Arrays.asList(arr);
+        String[] roles = decodeToken(token)
+                .getClaim("roles")
+                .asArray(String.class);
+
+        if (roles != null && roles.length > 0) {
+            return Arrays.asList(roles);
         }
+
         String role = decodeToken(token).getClaim("role").asString();
-        if (role != null) {
-            return List.of(role);
-        }
-        return Collections.emptyList();
+        return role != null ? List.of(role) : Collections.emptyList();
     }
 
     public boolean validateToken(String token, String username) {
         try {
             DecodedJWT decoded = decodeToken(token);
-            return decoded.getSubject().equals(username) && !isTokenExpired(decoded);
-        } catch (Exception e) {
+            return username.equals(decoded.getSubject()) && !isTokenExpired(decoded);
+        } catch (Exception ex) {
             return false;
         }
     }

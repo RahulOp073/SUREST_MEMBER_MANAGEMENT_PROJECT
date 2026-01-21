@@ -2,7 +2,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/surest_db
     username: postgres
-    password: Tiger
+    password: ${DB_PASSWORD:Tiger}
 
     hikari:
       maximum-pool-size: 10
@@ -42,3 +42,9 @@ logging:
 
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n"
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:my_super_secret_key_which_should_be_long_and_secure}
+    expiration-ms: 36000000
+    issuer: example.com

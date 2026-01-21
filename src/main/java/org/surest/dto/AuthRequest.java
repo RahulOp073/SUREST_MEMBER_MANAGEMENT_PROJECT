@@ -10,10 +10,10 @@ import lombok.ToString;
 @ToString
 public final class AuthRequest {
 
-    @NotBlank
+    @NotBlank(message = "Username cannot be blank")
     private final String username;
 
-    @NotBlank
+    @NotBlank(message = "Password cannot be blank")
     private final String password;
 
     @JsonCreator

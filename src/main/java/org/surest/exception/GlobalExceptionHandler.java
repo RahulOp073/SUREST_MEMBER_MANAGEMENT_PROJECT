@@ -15,87 +15,110 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<SurestErrorResponse> handleUserNotFound(UserNotFoundException ex, HttpServletRequest request) {
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("User Not Found")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
+    private static final String USER_NOT_FOUND = "User Not Found";
+    private static final String ACCESS_DENIED = "Access Denied";
+    private static final String VALIDATION_FAILED = "Validation Failed";
+    private static final String INTERNAL_SERVER_ERROR = "Internal Server Error";
+    private static final String DUPLICATE_EMAIL = "DUPLICATE_EMAIL";
+    private static final String MEMBER_NOT_FOUND = "MEMBER_NOT_FOUND";
 
-        return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<SurestErrorResponse> handleUserNotFound(
+            UserNotFoundException ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                USER_NOT_FOUND,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<SurestErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.FORBIDDEN.value())
-                .error("Access Denied")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
+    public ResponseEntity<SurestErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request) {
 
-        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+        return buildErrorResponse(
+                HttpStatus.FORBIDDEN,
+                ACCESS_DENIED,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<SurestErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        String errors = ex.getBindingResult().getFieldErrors()
+    public ResponseEntity<SurestErrorResponse> handleValidationExceptions(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
+
+        String errors = ex.getBindingResult()
+                .getFieldErrors()
                 .stream()
                 .map(FieldError::getDefaultMessage)
                 .collect(Collectors.joining(", "));
 
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Validation Failed")
-                .message(errors)
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return buildErrorResponse(
+                HttpStatus.BAD_REQUEST,
+                VALIDATION_FAILED,
+                errors,
+                request
+        );
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<SurestErrorResponse> handleAllExceptions(Exception ex, HttpServletRequest request) {
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .error("Internal Server Error")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
-
-        return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
     @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<SurestErrorResponse> handleEmailExists(EmailAlreadyExistsException ex,
-            HttpServletRequest request)
-    {
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.CONFLICT.value())
-                .error("DUPLICATE_EMAIL")
-                .message(ex.getMessage())
-                .path(request.getRequestURI())
-                .build();
+    public ResponseEntity<SurestErrorResponse> handleEmailExists(
+            EmailAlreadyExistsException ex,
+            HttpServletRequest request) {
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        return buildErrorResponse(
+                HttpStatus.CONFLICT,
+                DUPLICATE_EMAIL,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(MemberNotFoundException.class)
     public ResponseEntity<SurestErrorResponse> handleMemberNotFound(
             MemberNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        SurestErrorResponse error = SurestErrorResponse.builder()
-                .status(HttpStatus.NOT_FOUND.value())
-                .error("MEMBER_NOT_FOUND")
-                .message(ex.getMessage())
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.NOT_FOUND,
+                MEMBER_NOT_FOUND,
+                ex.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<SurestErrorResponse> handleAllExceptions(
+            Exception ex,
+            HttpServletRequest request) {
+
+        return buildErrorResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                INTERNAL_SERVER_ERROR,
+                ex.getMessage(),
+                request
+        );
+    }
+
+    private ResponseEntity<SurestErrorResponse> buildErrorResponse(
+            HttpStatus status,
+            String error,
+            String message,
+            HttpServletRequest request) {
+
+        SurestErrorResponse response = SurestErrorResponse.builder()
+                .status(status.value())
+                .error(error)
+                .message(message)
                 .path(request.getRequestURI())
                 .build();
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        return ResponseEntity.status(status).body(response);
     }
-
-
-
 }

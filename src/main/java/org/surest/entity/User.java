@@ -1,7 +1,20 @@
 package org.surest.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.util.HashSet;
@@ -31,9 +44,11 @@ public class User {
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "user_roles",
+    @JoinTable(
+            name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+            inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id")
+    )
     private Set<Role> roles = new HashSet<>();
 
     @Version
@@ -41,12 +56,16 @@ public class User {
     private Long version;
 
     public boolean addRole(Role role) {
-        if (role == null) return false;
+        if (role == null) {
+            return false;
+        }
         return this.roles.add(role);
     }
 
     public boolean removeRole(Role role) {
-        if (role == null) return false;
+        if (role == null) {
+            return false;
+        }
         return this.roles.remove(role);
     }
 }
